@@ -1,0 +1,678 @@
+#+TITLE: Configuration Emacs - ENSIMAG 2025
+#+AUTHOR: Configuration basée sur Matthieu Moy et Grégory Mounié
+#+DESCRIPTION: Configuration Emacs modernisée et optimisée pour le développement
+
+* Table des matières
+- [[#configuration-de-base][Configuration de base]]
+- [[#gestionnaire-de-paquets][Gestionnaire de paquets]]
+- [[#optimisations-de-performance][Optimisations de performance]]
+- [[#interface-utilisateur][Interface utilisateur]]
+- [[#développement---support-des-langages][Développement - Support des langages]]
+- [[#outils-de-développement][Outils de développement]]
+- [[#git-et-gestion-de-projet][Git et gestion de projet]]
+- [[#navigation-et-recherche][Navigation et recherche]]
+- [[#productivité][Productivité]]
+- [[#org-mode-et-jupyter][Org-mode et Jupyter]]
+- [[#configuration-spécifique-ensimag][Configuration spécifique ENSIMAG]]
+
+* Configuration de base
+** Initialisation et paramètres essentiels
+
+#+BEGIN_SRC emacs-lisp
+;;; init.el --- Configuration Emacs ENSIMAG
+
+;;; Commentary:
+;; Configuration Emacs modernisée pour l'ENSIMAG
+;; Version organisée avec org-mode
+
+;;; Code:
+
+;; Désactiver les éléments d'interface superflus
+(setq inhibit-startup-screen t
+      inhibit-splash-screen t
+      visible-bell t)
+
+;; Configuration des modes de base
+(electric-pair-mode 1)
+(show-paren-mode 1)
+(line-number-mode t)
+(column-number-mode t)
+(global-display-line-numbers-mode 1)
+(transient-mark-mode t)
+(recentf-mode 1)
+
+;; Interface épurée
+(tool-bar-mode -1)
+(menu-bar-mode -1)
+(scroll-bar-mode -1)
+(blink-cursor-mode -1)
+
+;; Fenêtre maximisée au démarrage
+(push '(fullscreen . maximized) default-frame-alist)
+#+END_SRC
+
+* Gestionnaire de paquets
+** Configuration des archives et use-package
+
+#+BEGIN_SRC emacs-lisp
+;; indiquer a emacs ou charger les fichiers .el
+(add-to-list 'load-path (expand-file-name "~/emacs/lisp/emacs-lisp/"))
+;; Configuration des archives de paquets
+(require 'package)
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("gnu" . "https://elpa.gnu.org/packages/")
+                         ("nongnu" . "https://elpa.nongnu.org/nongnu/")))
+
+;; Installation automatique des paquets essentiels
+(setq package-selected-packages 
+      '(use-package which-key helm projectile magit flycheck company
+        lsp-mode lsp-treemacs yasnippet treemacs treemacs-projectile
+        treemacs-magit doom-themes all-the-icons all-the-icons-dired
+        centaur-tabs elpy irony helm-xref dap-mode minimap anzu
+        markdown-mode glsl-mode csharp-mode simple-httpd jupyter))
+
+(when (cl-find-if-not #'package-installed-p package-selected-packages)
+  (package-refresh-contents)
+  (mapc #'package-install package-selected-packages))
+
+;; Assurer que use-package est disponible
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+(require 'use-package)
+(setq use-package-always-ensure t)
+#+END_SRC
+
+* Optimisations de performance
+** Optimisations critiques pour LSP et Emacs
+
+Ces optimisations sont cruciales pour améliorer les performances d'Emacs, surtout avec LSP.
+
+#+BEGIN_SRC emacs-lisp
+;; Optimisations critiques de performance
+(setq gc-cons-threshold (* 100 1024 1024)  ; 100 MiB avant GC
+      read-process-output-max (* 1024 1024)) ; 1 MiB pour LSP
+
+;; Fichiers ignorés par LSP pour éviter la surcharge
+(setq lsp-file-watch-ignored
+      '("[/\\\\]\\.git$" "[/\\\\]\\.hg$" "[/\\\\]\\.bzr$"
+        "[/\\\\]_darcs$" "[/\\\\]\\.svn$" "[/\\\\]_FOSSIL_$"
+        "[/\\\\]\\.idea$" "[/\\\\]\\.ensime_cache$" "[/\\\\]\\.eunit$"
+        "[/\\\\]node_modules$" "[/\\\\]\\.fslckout$" "[/\\\\]\\.tox$"
+        "[/\\\\]\\.stack-work$" "[/\\\\]\\.bloop$" "[/\\\\]\\.metals$"
+        "[/\\\\]target$" "[/\\\\]\\.ccls-cache$" "[/\\\\]\\.vscode$"
+        "[/\\\\]\\.deps$" "[/\\\\]build$"))
+
+;; Restaurer le GC threshold après l'initialisation
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (setq gc-cons-threshold 16777216 ; 16MB
+                  gc-cons-percentage 0.1)))
+#+END_SRC
+
+* Interface utilisateur
+** Thème et apparence
+
+Configuration du thème Doom Dracula et des icônes pour une interface moderne.
+
+#+BEGIN_SRC emacs-lisp
+    ;; Gestion des icônes
+    (use-package all-the-icons
+      :ensure t
+      :config
+      ;; Installation automatique des polices si nécessaire
+      (unless (find-font (font-spec :name "all-the-icons"))
+        (all-the-icons-install-fonts t)))
+
+    (use-package all-the-icons-dired
+      :hook (dired-mode . all-the-icons-dired-mode))
+    ;; Ajout des icônes pour ivy
+    (use-package all-the-icons-ivy
+      :ensure t
+      :init
+      (all-the-icons-ivy-setup)
+      )
+
+    (use-package treemacs-all-the-icons
+    :after treemacs
+    :ensure t
+    :config
+    (treemacs-load-theme "all-the-icons"))
+    ;; Thème Doom Dracula
+    (use-package doom-themes
+      :config
+      (setq doom-themes-enable-bold t
+            doom-themes-enable-italic t
+            doom-dracula-brighter-modeline t)
+      (load-theme 'doom-dracula t)
+      (doom-themes-visual-bell-config)
+      (doom-themes-org-config)
+      (doom-themes-treemacs-config))
+
+    ;; Configuration des espaces et tabulations
+    (setq whitespace-style '(face tabs tab-mark trailing)
+          whitespace-display-mappings '((tab-mark 9 [124 9] [92 9])))
+
+    ;; Police par défaut:
+  (set-face-attribute 'default nil :font "JetBrains Mono NL-12")
+  #+END_SRC
+
+** Onglets avec Centaur Tabs
+
+#+BEGIN_SRC emacs-lisp
+  ;; Centaur tabs pour les onglets
+  (use-package centaur-tabs
+    :demand
+    :init
+    (setq centaur-tabs-style "rounded"
+  	centaur-tabs-set-bar 'left
+  	centaur-tabs-height 24
+  	centaur-tabs-cycle-scope 'groups
+  	centaur-tabs-set-icons t
+  	centaur-tabs-icon-type 'all-the-icons
+          centaur-tabs-gray-out-icons 'buffer
+          centaur-tabs-modified-marker nil
+  	centaur-tabs-close-button "●"
+          centaur-tabs-set-bar 'under)
+    (defun centaur-tabs-buffer-groups ()
+  	  "`centaur-tabs-buffer-groups' control buffers' group rules.
+
+  	Group centaur-tabs with mode if buffer is derived from `eshell-mode'
+  	`emacs-lisp-mode' `dired-mode' `org-mode' `magit-mode'.
+  	All buffer name start with * will group to \"Emacs\".
+  	Other buffer group by `centaur-tabs-get-group-name' with project name."
+  	  (list
+  	(cond
+  	 ((or (string-equal "*" (substring (buffer-name) 0 1))
+  		  (memq major-mode '(magit-process-mode
+  				 magit-status-mode
+  				 magit-diff-mode
+  				 magit-log-mode
+  				 magit-file-mode
+  				 magit-blob-mode
+  				 magit-blame-mode
+  				 )))
+  	  "Emacs")
+  	 ((derived-mode-p 'prog-mode)
+  	  "Editing")
+  	 ((derived-mode-p 'dired-mode)
+  	  "Dired")
+  	 ((derived-mode-p 'vterm-mode)
+  	  "Terminal")
+  	 ((memq major-mode '(helpful-mode
+  				 help-mode))
+  	  "Help")
+  	 ((memq major-mode '(org-mode
+  				 org-agenda-clockreport-mode
+  				 org-src-mode
+  				 org-agenda-mode
+  				 org-beamer-mode
+  				 org-indent-mode
+  				 org-bullets-mode
+  				 org-cdlatex-mode
+  				 org-agenda-log-mode
+  				 diary-mode))
+  	  "OrgMode")
+  	 (t
+  	  (centaur-tabs-get-group-name (current-buffer))))))
+    :hook
+    (recentf-mode . centaur-tabs-local-mode)
+    (dashboard-mode . centaur-tabs-local-mode)
+    (term-mode . centaur-tabs-local-mode)
+    (calendar-mode . centaur-tabs-local-mode)
+    (org-agenda-mode . centaur-tabs-local-mode)
+    (helpful-mode . centaur-tabs-local-mode)
+    :config
+    (centaur-tabs-headline-match)
+    (centaur-tabs-group-by-projectile-project)
+    (centaur-tabs-mode t)
+    :bind
+    ("C-<prior>" . centaur-tabs-backward)
+    ("C-<next>" . centaur-tabs-forward)
+    )
+
+#+END_SRC
+
+* Développement - Support des langages
+** Configuration générale pour la programmation
+
+#+BEGIN_SRC emacs-lisp
+;; Menu de navigation pour tous les modes de programmation
+(add-hook 'prog-mode-hook #'imenu-add-menubar-index)
+
+;; Style de codage pour C/C++
+(setq c-default-style "linux"
+      c-basic-offset 4
+      tab-width 4)
+
+;; Association des extensions de fichiers
+(add-to-list 'auto-mode-alist '("\\.[sS]\\'" . asm-mode))
+(add-to-list 'auto-mode-alist '("\\.ass\\'" . asm-mode))
+(add-to-list 'auto-mode-alist '("\\.deca\\'" . java-mode))
+#+END_SRC
+
+** Support spécifique des langages
+
+#+BEGIN_SRC emacs-lisp
+;; Python avec Elpy
+(use-package elpy
+  :init (elpy-enable)
+  :config
+  (setq elpy-rpc-virtualenv-path 'current))
+
+;; C/C++ avec Irony
+(use-package irony
+  :hook ((c++-mode . irony-mode)
+         (c-mode . irony-mode)
+         (objc-mode . irony-mode)))
+
+;; GLSL pour les shaders
+(use-package glsl-mode
+  :mode ("\\.glsl\\'" "\\.frag\\'" "\\.vert\\'"))
+
+;; C# mode
+(use-package csharp-mode
+  :hook (csharp-mode . electric-pair-local-mode))
+
+;; Support de LaTeX
+(use-package tex
+  :ensure auctex
+  :config (setq TeX-PDF-mode t))
+(add-hook 'latex-mode-hook 'flyspell-mode)
+
+;; Markdown
+(use-package markdown-mode
+  :mode ("README\\.md\\'" . gfm-mode)
+  :init (setq markdown-command "pandoc"))
+
+;; JavaScript
+(setq js-indent-level 2)
+#+END_SRC
+
+* Outils de développement
+** LSP (Language Server Protocol)
+
+Configuration optimisée de LSP pour de meilleures performances.
+
+#+BEGIN_SRC emacs-lisp
+  ;; Configuration LSP optimisée
+  (use-package lsp-mode
+    :hook ((prog-mode . lsp-deferred)
+           (lsp-mode . lsp-enable-which-key-integration))
+    :commands (lsp lsp-deferred)
+    :config
+    (setq lsp-idle-delay 0.5  ; Réduire la latence
+          lsp-log-io nil      ; Désactiver les logs pour les performances
+          lsp-enable-snippet t
+          lsp-keymap-prefix "C-c l")
+    
+    ;; Configuration pour Python
+    (add-to-list 'lsp-language-id-configuration '(python-mode . "python")))
+
+  ;; Interface LSP avec Treemacs
+  (use-package lsp-treemacs
+    :ensure t
+    :after lsp
+    :init (lsp-treemacs-sync-mode 1))
+
+  ;; Intégration Helm pour LSP
+  (use-package helm-xref
+    :after helm)
+
+  ;; Débogage avec DAP
+  (use-package dap-mode
+    :after lsp-mode
+    :config
+    (require 'dap-cpptools)
+    (dap-auto-configure-mode))
+
+  ;; Configuration de lsp-ui
+  (use-package lsp-ui
+    :ensure t
+    :config
+    ;; On active l'affichage de la doc
+    (setq lsp-ui-doc-enable t
+  	lsp-ui-doc-delay 0.5
+  	lsp-ui-doc-show-with-mouse t
+  	lsp-ui-doc-show-with-cursor t
+  	lsp-ui-doc-header t
+  	lsp-ui-doc-include-signature t
+  	lsp-ui-doc-alignment 'window
+  	lsp-ui-doc-max-height 30)
+    ;; Gestion de la sideline
+    (setq lsp-ui-sideline-delay 0.2
+  	lsp-ui-sideline-show-diagnostics t
+  	lsp-ui-sideline-show-hover t
+  	lsp-ui-sideline-show-code-actions t
+  	lsp-ui-sideline-update-mode 'line)
+    )
+
+#+END_SRC
+
+** Vérification et complétion
+
+#+BEGIN_SRC emacs-lisp
+;; Flycheck pour la vérification syntaxique
+(use-package flycheck
+  :hook (after-init . global-flycheck-mode)
+  :config
+  (when (functionp 'global-flycheck-mode)
+    (push 'python-pylint flycheck-checkers)))
+
+;; Company pour l'autocomplétion
+(use-package company
+  :ensure t
+  :hook (prog-mode . company-mode)
+  :config
+  (setq company-idle-delay 0.2
+        company-minimum-prefix-length 1
+        company-selection-wrap-around t
+        company-tooltip-align-annotations t))
+
+;; YASnippet pour les templates
+(use-package yasnippet
+  :hook (prog-mode . yas-minor-mode)
+  :config (yas-global-mode))
+#+END_SRC
+
+** Copilot
+#+BEGIN_SRC emacs-lisp
+    ;; intégration avec Company via Tab
+(use-package copilot
+  :ensure t
+  :hook ((prog-mode . copilot-mode)
+         (text-mode . copilot-mode)
+         (markdown-mode . copilot-mode)
+         (org-mode . copilot-mode)
+         (git-commit-mode . copilot-mode))
+  :init
+  ;; Désactive l'avertissement d'indentation dès le chargement
+  (setq copilot-disable-indent-warning t)
+  :config
+  ;; Définit un comportement personnalisé pour la touche TAB
+  (defun my/copilot-tab ()
+    (interactive)
+    (or (copilot-accept-completion)
+        (company-indent-or-complete-common)
+        (indent-for-tab-command)))
+
+  (define-key copilot-mode-map (kbd "<tab>") #'my/copilot-tab)
+  (define-key copilot-mode-map (kbd "TAB") #'my/copilot-tab))
+
+;; Définir une indentation par défaut si aucune détectée
+(setq-default copilot-indent-offset 4)
+#+END_SRC
+* Git et gestion de projet
+** Magit pour Git
+
+#+BEGIN_SRC emacs-lisp
+;; Magit - Interface Git
+(use-package magit
+  :bind ("C-x g" . magit-status))
+#+END_SRC
+
+** Projectile pour la gestion de projets
+
+#+BEGIN_SRC emacs-lisp
+;; Projectile pour la gestion de projets
+(use-package projectile
+  :diminish projectile-mode
+  :bind-keymap ("C-p" . projectile-command-map)
+  :config
+  (setq projectile-sort-order 'recentf
+        projectile-enable-caching t
+        projectile-completion-system 'helm)
+  
+  ;; Type de projet Python personnalisé
+  (projectile-register-project-type 
+   'python3-pytest '("pytest.ini" "setup.py")
+   :compile "python3 setup.py build"
+   :test "python3 -m pytest"
+   :test-dir "tests"
+   :test-prefix "test_"
+   :test-suffix "_test.py")
+  
+  (projectile-mode +1))
+#+END_SRC
+
+* Terminal
+#+BEGIN_SRC emacs-lisp
+(use-package vterm
+	:ensure t
+	:config
+	(setq vterm-kill-buffer-on-exit t
+          vterm-shell "/bin/bash")
+	)
+#+END_SRC
+
+* Navigation et recherche
+** Helm pour la navigation
+
+#+BEGIN_SRC emacs-lisp
+;; Helm - Interface de sélection moderne
+(use-package helm
+  :bind (("M-x" . helm-M-x)
+         ("M-y" . helm-show-kill-ring)
+         ("C-x C-f" . helm-find-files)
+         ("C-x b" . helm-mini))
+  :config
+  (helm-mode 1)
+  (define-key global-map [remap find-file] #'helm-find-files)
+  (define-key global-map [remap execute-extended-command] #'helm-M-x)
+  (define-key global-map [remap switch-to-buffer] #'helm-mini))
+#+END_SRC
+
+** Treemacs pour l'arborescence
+
+#+BEGIN_SRC emacs-lisp
+  ;; Treemacs - Explorateur de fichiers
+  (use-package treemacs
+    :ensure t
+    :defer t
+    :bind ("M-œ" . treemacs)
+    :config
+    (setq treemacs-width 25
+          treemacs-indentation '(4 px)
+          treemacs-is-never-other-window t
+          treemacs-width-is-initially-locked nil
+          treemacs-space-between-root-nodes nil
+          treemacs-collapse-dirs 4
+          treemacs-text-scale -1
+          treemacs-width-max 120
+  	  treemacs-no-png-images nil)
+    
+    (treemacs-resize-icons 25)
+    (treemacs-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always)
+    (treemacs-tag-follow-mode t)
+    (treemacs-hide-gitignored-files-mode nil)
+    (treemacs-load-theme "all-the-icons")
+    (treemacs-load-theme "Default")
+    
+    ;; Intégrations Treemacs
+    (use-package treemacs-projectile
+      :after (treemacs projectile))
+
+    (use-package treemacs-magit
+      :after (treemacs magit)))
+#+END_SRC
+
+** Dahsboarf
+
+#+BEGIN_SRC emacs-lisp
+  ;; Configuration de dashboard
+(use-package dashboard
+  :ensure t
+  :config
+  ;; On active la prise en charge des projets avec projectile
+  (setq dashboard-projects-backend 'projectile)
+  ;; On personnalise le logo
+  (setq dashboard-startup-banner "~/.config/emacs/logo.png")
+  ;; On ajoute les raccourcis de rubrique
+  (setq dashboard-set-navigator t)
+  ;; On centre le contenu
+  (setq dashboard-center-content t)
+  ;; On configure ce qu'on veut voir apparaître
+  (setq dashboard-items '((recents  . 5)
+                          (projects . 5)
+                          (bookmarks . 5)))
+  ;; On met des icônes
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-file-icons t)
+  ;; On vire le footer (je ne le lis pas)
+  (setq dashboard-set-footer nil)
+  ;; On démarre dashboard par défaut
+  (dashboard-setup-startup-hook)
+  )
+#+END_SRC
+
+* Productivité
+** Raccourcis et utilitaires
+
+#+BEGIN_SRC emacs-lisp
+;; Which-key pour l'aide contextuelle
+(use-package which-key
+  :diminish which-key-mode
+  :config
+  (setq which-key-sort-uppercase-first nil
+        max-mini-window-height 15)
+  (which-key-setup-side-window-bottom)
+  (which-key-mode t))
+
+;; Anzu pour le nombre de correspondances
+(use-package anzu
+  :config (global-anzu-mode))
+
+;; Minimap
+(use-package minimap
+  :diminish minimap-mode
+  :config
+  (setq minimap-window-location 'right
+        minimap-width-fraction 0.04
+        minimap-dedicated-window t
+        minimap-minimum-width 15))
+
+;; Raccourcis personnalisés
+(global-set-key (kbd "C-z") 'undo)
+(global-set-key (kbd "C-f") 'isearch-forward)
+(global-set-key (kbd "C-u") 'xref-pop-marker-stack)
+(global-set-key [M-f9] 'compile)
+(global-set-key [f9] 'recompile)
+
+;; Navigation dans le code
+(defun try-to-add-imenu ()
+  (condition-case nil 
+      (imenu-add-to-menubar "Navigation") 
+    (error nil)))
+(add-hook 'font-lock-mode-hook 'try-to-add-imenu)
+#+END_SRC
+
+* Org-mode et Jupyter
+** Configuration Org-mode
+
+#+BEGIN_SRC emacs-lisp
+;; Configuration Org-mode
+(use-package org
+  :bind (("C-c l" . org-store-link)
+         ("C-c a" . org-agenda)
+         ("C-c c" . org-capture))
+  :hook ((org-mode . org-indent-mode)
+         (org-mode . visual-line-mode))
+  :config
+  (setq org-hide-emphasis-markers t
+        org-support-shift-select t
+        org-confirm-babel-evaluate nil)
+  
+  ;; Langages pour Org Babel
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((shell . t)
+     (emacs-lisp . t)
+     (python . t))))
+#+END_SRC
+
+** Jupyter pour les notebooks
+
+#+BEGIN_SRC emacs-lisp
+;; Jupyter pour les notebooks (optionnel)
+(use-package jupyter
+  :config (setq jupyter-repl-echo-eval-p t))
+#+END_SRC
+
+* Configuration spécifique ENSIMAG
+** Projets web et shaders
+
+#+BEGIN_SRC emacs-lisp
+;; Serveur HTTP simple pour les projets web
+(use-package simple-httpd
+  :config (setq httpd-root "~/ensimag/2A/graphics3D/projet"))
+
+;; Fonction pour recharger les shaders
+(defun reload-shader ()
+  "Sauvegarde le buffer et recharge le shader dans le navigateur."
+  (interactive)
+  (save-buffer)
+  (shell-command "touch ~/ensimag/2A/graphics3D/projet/shader_viewer.html"))
+
+(global-set-key (kbd "C-c r") 'reload-shader)
+
+;; Configuration GDB
+(setq gdb-many-windows t
+      gdb-display-source-buffer-action
+      '(display-buffer-reuse-window display-buffer-pop-up-window))
+#+END_SRC
+
+** Finalisation
+
+#+BEGIN_SRC emacs-lisp
+  ;; Finalisation
+  (provide 'init)
+  ;;; init.el ends here
+
+  (custom-set-faces
+ ;; Onglet modifié et sélectionné
+ '(centaur-tabs-selected-modified ((t (:foreground "red" :weight bold))))
+ ;; Onglet modifié et non sélectionné
+ '(centaur-tabs-unselected-modified ((t (:foreground "red" :weight bold)))))
+#+END_SRC
+
+* Instructions d'installation
+
+** Étapes nécessaires
+
+1. **Supprimez votre ancienne configuration** :
+   #+BEGIN_SRC bash
+   mv ~/.emacs.d ~/.emacs.d.backup
+   mkdir ~/.emacs.d
+   #+END_SRC
+
+2. **Créez le fichier de configuration** :
+   - Copiez ce contenu dans =~/.emacs.d/init.org=
+   - Supprimez le fichier =~/.emacs.d/init.el= s'il existe
+   - Emacs détectera automatiquement le fichier =init.org=
+
+3. **Installation des polices** (obligatoire) :
+   #+BEGIN_SRC bash
+   # Ubuntu/Debian
+   sudo apt install fonts-firacode fonts-hack-ttf
+   #+END_SRC
+
+4. **Paquets système requis** :
+   #+BEGIN_SRC bash
+   sudo apt install pylint3 pandoc
+   #+END_SRC
+
+** Principales améliorations
+
+- *Suppression des doublons* : Éliminé les configurations répétées
+- *Optimisation des performances* : 
+  - Désactivation du mode sémantique (très lourd)
+  - Configuration LSP optimisée
+  - GC threshold augmenté
+- *Organisation logique* : Regroupement par fonctionnalité
+- *Use-package systématique* : Configuration plus propre
+- *Lazy loading* : LSP en mode =lsp-deferred=
+- *Nettoyage des hooks* : Suppression des configurations inutiles
+
+Cette configuration devrait être significativement plus rapide et plus maintenable que l'originale.
