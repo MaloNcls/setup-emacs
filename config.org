@@ -15,42 +15,6 @@
 - [[#org-mode-et-jupyter][Org-mode et Jupyter]]
 - [[#configuration-spécifique-ensimag][Configuration spécifique ENSIMAG]]
 
-* Configuration de base
-** Initialisation et paramètres essentiels
-
-#+BEGIN_SRC emacs-lisp
-;;; init.el --- Configuration Emacs ENSIMAG
-
-;;; Commentary:
-;; Configuration Emacs modernisée pour l'ENSIMAG
-;; Version organisée avec org-mode
-
-;;; Code:
-
-;; Désactiver les éléments d'interface superflus
-(setq inhibit-startup-screen t
-      inhibit-splash-screen t
-      visible-bell t)
-
-;; Configuration des modes de base
-(electric-pair-mode 1)
-(show-paren-mode 1)
-(line-number-mode t)
-(column-number-mode t)
-(global-display-line-numbers-mode 1)
-(transient-mark-mode t)
-(recentf-mode 1)
-
-;; Interface épurée
-(tool-bar-mode -1)
-(menu-bar-mode -1)
-(scroll-bar-mode -1)
-(blink-cursor-mode -1)
-
-;; Fenêtre maximisée au démarrage
-(push '(fullscreen . maximized) default-frame-alist)
-#+END_SRC
-
 * Gestionnaire de paquets
 ** Configuration des archives et use-package
 
@@ -81,6 +45,150 @@
   (package-install 'use-package))
 (require 'use-package)
 (setq use-package-always-ensure t)
+#+END_SRC
+
+* Configuration de base
+** Initialisation et paramètres essentiels
+
+#+BEGIN_SRC emacs-lisp
+  ;;; init.el --- Configuration Emacs ENSIMAG
+
+  ;;; Commentary:
+  ;; Configuration Emacs modernisée pour l'ENSIMAG
+  ;; Version organisée avec org-mode
+
+  ;;; Code:
+
+  ;; Désactiver les éléments d'interface superflus
+  (setq inhibit-startup-screen t
+        inhibit-splash-screen t
+        visible-bell t)
+
+  ;; Configuration des modes de base
+  (electric-pair-mode 1)
+  (show-paren-mode 1)
+  (line-number-mode t)
+  (column-number-mode t)
+  (global-display-line-numbers-mode 1)
+  (transient-mark-mode t)
+  (recentf-mode 1)
+
+  ;; Interface épurée
+  (tool-bar-mode -1)
+  (menu-bar-mode -1)
+  (scroll-bar-mode -1)
+  (blink-cursor-mode -1)
+
+  ;; Fenêtre maximisée au démarrage
+  (push '(fullscreen . maximized) default-frame-alist)
+
+  ;; ouverture fichier config
+  (defun open-init-file ()
+  "Ouvre le fichier init.el."
+  (interactive)
+  (find-file "~/.emacs.d/config.org"))
+
+  (global-set-key (kbd "C-c i") 'open-init-file)
+#+END_SRC
+
+* Navigation et recherche
+** Helm pour la navigation
+
+#+BEGIN_SRC emacs-lisp
+  ;; Helm - Interface de sélection moderne
+  (use-package helm
+    :bind (("M-x" . helm-M-x)
+           ("M-y" . helm-show-kill-ring)
+           ("C-x C-f" . helm-find-files)
+           ("C-x b" . helm-mini))
+    :config
+    (define-key global-map [remap find-file] #'helm-find-files)
+    (define-key global-map [remap execute-extended-command] #'helm-M-x)
+    (define-key global-map [remap switch-to-buffer] #'helm-mini))
+  ;; Pour orgmode
+  (use-package helm-org
+    :ensure t
+    :after (helm org)
+    :config
+    ;; Exemples de raccourcis pour org-capture et org-agenda via helm
+    (define-key global-map (kbd "C-c h") 'helm-org-agenda-files-headings)
+    (define-key global-map (kbd "C-c j") 'helm-org-in-buffer-headings))
+
+#+END_SRC
+
+** Treemacs pour l'arborescence
+
+#+BEGIN_SRC emacs-lisp
+  ;; Treemacs - Explorateur de fichiers
+  (use-package treemacs
+    :ensure t
+    :defer t
+    :bind ("M-œ" . treemacs)
+    :config
+    (setq treemacs-width 25
+          treemacs-indentation '(4 px)
+          treemacs-is-never-other-window t
+          treemacs-width-is-initially-locked nil
+          treemacs-space-between-root-nodes nil
+          treemacs-collapse-dirs 4
+          treemacs-text-scale -1
+          treemacs-width-max 120
+  	  treemacs-no-png-images nil)
+    
+    (treemacs-resize-icons 25)
+    (treemacs-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode 'always)
+    (treemacs-tag-follow-mode t)
+    (treemacs-hide-gitignored-files-mode nil)
+    ;; (treemacs-load-theme "all-the-icons")
+    ;; (treemacs-load-theme "doom-colors")
+    
+    ;; Intégrations Treemacs
+    (use-package treemacs-projectile
+      :after (treemacs projectile))
+
+    (use-package treemacs-magit
+      :after (treemacs magit)))
+#+END_SRC
+
+** Dahsboard
+
+#+BEGIN_SRC emacs-lisp
+    ;; Configuration de dashboard
+    (use-package dashboard
+      :ensure t
+      :config
+      ;; On active la prise en charge des projets avec projectile
+      (setq dashboard-projects-backend 'projectile)
+      ;; On personnalise le logo
+      (setq dashboard-startup-banner "~/.emacs.d/logo.png")
+      (setq dashboard-banner-logo-title "Triumph, Battlefiield V")
+      ;; On ajoute les raccourcis de rubrique
+      (setq dashboard-set-navigator t)
+      ;; On centre le contenu
+      (setq dashboard-center-content t)
+      ;; On configure ce qu'on veut voir apparaître
+      (setq dashboard-items '((recents  . 5)
+                              (projects . 5)
+                              (bookmarks . 5)
+                              (registers . 5)))
+      ;; On met des icônes
+      (setq dashboard-icon-type 'all-the-icons)
+      (setq dashboard-set-heading-icons t)
+      (setq dashboard-set-file-icons t)
+      (dashboard-modify-heading-icons '((recents   . "file-text")
+                                        (bookmarks . "book")))
+
+      ;; On ajoute l'agenda
+      (add-to-list 'dashboard-items '(agenda) t)
+      (setq dashboard-week-agenda t)
+      (setq dashboard-filter-agenda-entry 'dashboard-no-filter-agenda)
+      ;; On vire le footer (je ne le lis pas)
+      (setq dashboard-set-footer nil)
+      ;; On démarre dashboard par défaut
+      (dashboard-setup-startup-hook)
+      )
 #+END_SRC
 
 * Optimisations de performance
@@ -116,46 +224,54 @@ Ces optimisations sont cruciales pour améliorer les performances d'Emacs, surto
 Configuration du thème Doom Dracula et des icônes pour une interface moderne.
 
 #+BEGIN_SRC emacs-lisp
-    ;; Gestion des icônes
-    (use-package all-the-icons
-      :ensure t
-      :config
-      ;; Installation automatique des polices si nécessaire
-      (unless (find-font (font-spec :name "all-the-icons"))
-        (all-the-icons-install-fonts t)))
+  ;; Gestion des icônes
+   (use-package all-the-icons
+     :ensure t
+     :config
+     ;; Installation automatique des polices si nécessaire
+     (unless (find-font (font-spec :name "all-the-icons"))
+       (all-the-icons-install-fonts t)))
+   (use-package all-the-icons-dired
+     :hook (dired-mode . all-the-icons-dired-mode))
+   ;; Ajout des icônes pour ivy
+   (use-package all-the-icons-ivy
+     :ensure t
+     :init
+     (all-the-icons-ivy-setup)
+     )
+   ;; Configuration des espaces et tabulations
+   (setq whitespace-style '(face tabs tab-mark trailing)
+         whitespace-display-mappings '((tab-mark 9 [124 9] [92 9])))
 
-    (use-package all-the-icons-dired
-      :hook (dired-mode . all-the-icons-dired-mode))
-    ;; Ajout des icônes pour ivy
-    (use-package all-the-icons-ivy
-      :ensure t
-      :init
-      (all-the-icons-ivy-setup)
-      )
-
-    (use-package treemacs-all-the-icons
-    :after treemacs
-    :ensure t
-    :config
-    (treemacs-load-theme "all-the-icons"))
-    ;; Thème Doom Dracula
-    (use-package doom-themes
-      :config
-      (setq doom-themes-enable-bold t
-            doom-themes-enable-italic t
-            doom-dracula-brighter-modeline t)
-      (load-theme 'doom-dracula t)
-      (doom-themes-visual-bell-config)
-      (doom-themes-org-config)
-      (doom-themes-treemacs-config))
-
-    ;; Configuration des espaces et tabulations
-    (setq whitespace-style '(face tabs tab-mark trailing)
-          whitespace-display-mappings '((tab-mark 9 [124 9] [92 9])))
-
-    ;; Police par défaut:
-  (set-face-attribute 'default nil :font "JetBrains Mono NL-12")
+   ;; Police par défaut:
+   (set-face-attribute 'default nil :font "JetBrains Mono NL-12")
+   ;; Configuration du thème doom
+   (use-package doom-themes
+     :ensure t
+     :config
+     ;; Global settings (defaults)
+     (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
+           doom-themes-enable-italic t ; if nil, italics is universally disabled
+           doom-dracula-brighter-modeline t  ; modeline plus visible.
+           )
+     (global-whitespace-mode t)
+     (load-theme 'doom-dracula t)
+     ;; Enable flashing mode-line on errors
+     (doom-themes-visual-bell-config)
+     ;; Corrects (and improves) org-mode's native fontification.
+     (doom-themes-org-config)
+     ;; doom-theme for treemacs
+     (setq doom-themes-treemacs-theme "doom-colors"
+           doom-themes-treemacs-bitmap-indicator-width 16)
+     (doom-themes-treemacs-config)
+     (setq whitespace-style '(face tabs tab-mark trailing))
+     (setq whitespace-display-mappings
+           '((tab-mark 9 [124 9] [92 9])))
+     )
+   (setq font-lock-maximum-decoration t)
   #+END_SRC
+
+  #+RESULTS:
 
 ** Onglets avec Centaur Tabs
 
@@ -297,18 +413,30 @@ Configuration optimisée de LSP pour de meilleures performances.
 #+BEGIN_SRC emacs-lisp
   ;; Configuration LSP optimisée
   (use-package lsp-mode
+    :diminish lsp-mode
     :hook ((prog-mode . lsp-deferred)
-           (lsp-mode . lsp-enable-which-key-integration))
+           (lsp-mode . lsp-enable-which-key-integration)
+           (c-mode . lsp)
+           (c++-mode . lsp)
+           (python-mode . lsp))
     :commands (lsp lsp-deferred)
     :config
     (setq lsp-idle-delay 0.5  ; Réduire la latence
-          lsp-log-io nil      ; Désactiver les logs pour les performances
+          lsp-log-io t      
           lsp-enable-snippet t
-          lsp-keymap-prefix "C-c l")
-    
-    ;; Configuration pour Python
-    (add-to-list 'lsp-language-id-configuration '(python-mode . "python")))
-
+          lsp-keymap-prefix "C-c l"
+          lsp-headerline-breadcrumb-enable nil
+          lsp-headerline-breadcrumb-enable-symbol-numbers t
+          lsp-headerline-breadcrumb-segments '(project file symbols)
+          lsp-lens-enable t
+          lsp-modeline-code-actions-enable t)
+    ;; On va utiliser capf: company-capf pour la completion.
+    ;; C'est intégré dans company
+    (setq lsp-completion-provider :capf
+          lsp-completion-show-detail t
+          lsp-completion-show-detail t)        
+    (define-key lsp-mode-map (kbd "C-l") lsp-command-map)
+    )
   ;; Interface LSP avec Treemacs
   (use-package lsp-treemacs
     :ensure t
@@ -332,19 +460,19 @@ Configuration optimisée de LSP pour de meilleures performances.
     :config
     ;; On active l'affichage de la doc
     (setq lsp-ui-doc-enable t
-  	lsp-ui-doc-delay 0.5
-  	lsp-ui-doc-show-with-mouse t
-  	lsp-ui-doc-show-with-cursor t
-  	lsp-ui-doc-header t
-  	lsp-ui-doc-include-signature t
-  	lsp-ui-doc-alignment 'window
-  	lsp-ui-doc-max-height 30)
+        	lsp-ui-doc-delay 0.5
+        	lsp-ui-doc-show-with-mouse t
+        	lsp-ui-doc-show-with-cursor t
+        	lsp-ui-doc-header t
+        	lsp-ui-doc-include-signature t
+        	lsp-ui-doc-alignment 'window
+        	lsp-ui-doc-max-height 30)
     ;; Gestion de la sideline
     (setq lsp-ui-sideline-delay 0.2
-  	lsp-ui-sideline-show-diagnostics t
-  	lsp-ui-sideline-show-hover t
-  	lsp-ui-sideline-show-code-actions t
-  	lsp-ui-sideline-update-mode 'line)
+        	lsp-ui-sideline-show-diagnostics t
+        	lsp-ui-sideline-show-hover t
+        	lsp-ui-sideline-show-code-actions t
+        	lsp-ui-sideline-update-mode 'line)
     )
 
 #+END_SRC
@@ -368,7 +496,7 @@ Configuration optimisée de LSP pour de meilleures performances.
         company-minimum-prefix-length 1
         company-selection-wrap-around t
         company-tooltip-align-annotations t))
-
+  (add-hook 'org-mode-hook (lambda () (company-mode -1)))
 ;; YASnippet pour les templates
 (use-package yasnippet
   :hook (prog-mode . yas-minor-mode)
@@ -377,30 +505,63 @@ Configuration optimisée de LSP pour de meilleures performances.
 
 ** Copilot
 #+BEGIN_SRC emacs-lisp
-    ;; intégration avec Company via Tab
-(use-package copilot
-  :ensure t
-  :hook ((prog-mode . copilot-mode)
-         (text-mode . copilot-mode)
-         (markdown-mode . copilot-mode)
-         (org-mode . copilot-mode)
-         (git-commit-mode . copilot-mode))
-  :init
-  ;; Désactive l'avertissement d'indentation dès le chargement
-  (setq copilot-disable-indent-warning t)
-  :config
-  ;; Définit un comportement personnalisé pour la touche TAB
-  (defun my/copilot-tab ()
-    (interactive)
-    (or (copilot-accept-completion)
-        (company-indent-or-complete-common)
-        (indent-for-tab-command)))
+  ;; intégration avec Company via Tab
+  (use-package copilot
+    :ensure t
+    :hook ((prog-mode . copilot-mode)
+           (text-mode . copilot-mode)
+           (markdown-mode . copilot-mode)
+           (org-mode . copilot-mode)
+           (git-commit-mode . copilot-mode))
 
+    :config
+    ;; Définit un comportement personnalisé pour la touche TAB
+    (defun my/copilot-tab ()
+      "Gère intelligemment la touche TAB avec Copilot, Org, Company, et l'indentation."
+      (interactive)
+      (cond
+       ;; 1. Si Copilot propose une complétion, l'accepter
+      ((and (boundp 'copilot-mode) copilot-mode
+            (copilot-accept-completion))
+       t) 
+       ;; 2. Si on est en org-mode et qu'on peut plier/déplier quelque chose, on le fait
+       ((and (derived-mode-p 'org-mode)
+            (or (org-at-heading-p)
+                (org-in-item-p)
+                (org-in-block-p nil)))
+       (org-cycle))
+
+
+
+      ;; 3. Sinon, si company-mode est actif, on complète
+      ((and (boundp 'company-mode) company-mode)
+       (company-indent-or-complete-common))
+
+      ;; 4. Sinon, indentation normale
+      (t
+       (indent-for-tab-command))))
+
+  (with-eval-after-load 'copilot
   (define-key copilot-mode-map (kbd "<tab>") #'my/copilot-tab)
   (define-key copilot-mode-map (kbd "TAB") #'my/copilot-tab))
 
-;; Définir une indentation par défaut si aucune détectée
-(setq-default copilot-indent-offset 4)
+  ;; Définir une indentation par défaut si aucune détectée
+  (add-hook 'js-mode-hook
+            (lambda () (setq js-indent-level 2)))
+  (add-hook 'python-mode-hook
+            (lambda () (setq python-indent-offset 4)))
+  (setq-default indent-tabs-mode nil)
+  (setq-default tab-width 4))
+
+
+  ;; (defun my-org-mode-tab ()
+  ;;   "Si Copilot affiche une suggestion, l'accepter, sinon plier/déplier dans org-mode."
+  ;;   (interactive)
+  ;;   (if (and (boundp 'copilot-completion-overlay)
+  ;;            copilot-completion-overlay)
+  ;;       (copilot-accept-completion)
+  ;;     (org-cycle)))
+
 #+END_SRC
 * Git et gestion de projet
 ** Magit pour Git
@@ -422,7 +583,6 @@ Configuration optimisée de LSP pour de meilleures performances.
   (setq projectile-sort-order 'recentf
         projectile-enable-caching t
         projectile-completion-system 'helm)
-  
   ;; Type de projet Python personnalisé
   (projectile-register-project-type 
    'python3-pytest '("pytest.ini" "setup.py")
@@ -443,88 +603,6 @@ Configuration optimisée de LSP pour de meilleures performances.
 	(setq vterm-kill-buffer-on-exit t
           vterm-shell "/bin/bash")
 	)
-#+END_SRC
-
-* Navigation et recherche
-** Helm pour la navigation
-
-#+BEGIN_SRC emacs-lisp
-;; Helm - Interface de sélection moderne
-(use-package helm
-  :bind (("M-x" . helm-M-x)
-         ("M-y" . helm-show-kill-ring)
-         ("C-x C-f" . helm-find-files)
-         ("C-x b" . helm-mini))
-  :config
-  (helm-mode 1)
-  (define-key global-map [remap find-file] #'helm-find-files)
-  (define-key global-map [remap execute-extended-command] #'helm-M-x)
-  (define-key global-map [remap switch-to-buffer] #'helm-mini))
-#+END_SRC
-
-** Treemacs pour l'arborescence
-
-#+BEGIN_SRC emacs-lisp
-  ;; Treemacs - Explorateur de fichiers
-  (use-package treemacs
-    :ensure t
-    :defer t
-    :bind ("M-œ" . treemacs)
-    :config
-    (setq treemacs-width 25
-          treemacs-indentation '(4 px)
-          treemacs-is-never-other-window t
-          treemacs-width-is-initially-locked nil
-          treemacs-space-between-root-nodes nil
-          treemacs-collapse-dirs 4
-          treemacs-text-scale -1
-          treemacs-width-max 120
-  	  treemacs-no-png-images nil)
-    
-    (treemacs-resize-icons 25)
-    (treemacs-follow-mode t)
-    (treemacs-filewatch-mode t)
-    (treemacs-fringe-indicator-mode 'always)
-    (treemacs-tag-follow-mode t)
-    (treemacs-hide-gitignored-files-mode nil)
-    (treemacs-load-theme "all-the-icons")
-    (treemacs-load-theme "Default")
-    
-    ;; Intégrations Treemacs
-    (use-package treemacs-projectile
-      :after (treemacs projectile))
-
-    (use-package treemacs-magit
-      :after (treemacs magit)))
-#+END_SRC
-
-** Dahsboarf
-
-#+BEGIN_SRC emacs-lisp
-  ;; Configuration de dashboard
-(use-package dashboard
-  :ensure t
-  :config
-  ;; On active la prise en charge des projets avec projectile
-  (setq dashboard-projects-backend 'projectile)
-  ;; On personnalise le logo
-  (setq dashboard-startup-banner "~/.config/emacs/logo.png")
-  ;; On ajoute les raccourcis de rubrique
-  (setq dashboard-set-navigator t)
-  ;; On centre le contenu
-  (setq dashboard-center-content t)
-  ;; On configure ce qu'on veut voir apparaître
-  (setq dashboard-items '((recents  . 5)
-                          (projects . 5)
-                          (bookmarks . 5)))
-  ;; On met des icônes
-  (setq dashboard-set-heading-icons t)
-  (setq dashboard-set-file-icons t)
-  ;; On vire le footer (je ne le lis pas)
-  (setq dashboard-set-footer nil)
-  ;; On démarre dashboard par défaut
-  (dashboard-setup-startup-hook)
-  )
 #+END_SRC
 
 * Productivité
@@ -572,26 +650,130 @@ Configuration optimisée de LSP pour de meilleures performances.
 ** Configuration Org-mode
 
 #+BEGIN_SRC emacs-lisp
-;; Configuration Org-mode
-(use-package org
-  :bind (("C-c l" . org-store-link)
-         ("C-c a" . org-agenda)
-         ("C-c c" . org-capture))
-  :hook ((org-mode . org-indent-mode)
-         (org-mode . visual-line-mode))
-  :config
-  (setq org-hide-emphasis-markers t
-        org-support-shift-select t
-        org-confirm-babel-evaluate nil)
-  
-  ;; Langages pour Org Babel
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((shell . t)
-     (emacs-lisp . t)
-     (python . t))))
-#+END_SRC
+  ;; Configuration Org-mode
+  (use-package org
+    :bind (("C-c l" . org-store-link)
+           ("C-c a" . org-agenda)
+           ("C-c c" . org-capture))
+    :hook ((org-mode . org-indent-mode)
+           (org-mode . visual-line-mode))
+    :config
+    (setq org-hide-emphasis-markers t
+          org-support-shift-select t
+          org-confirm-babel-evaluate nil)
+    
+    ;; Langages pour Org Babel
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((shell . t)
+       (emacs-lisp . t)
+       (python . t))))
 
+  ;; Activer les extras d'Org-mode
+  ;; Active balise ignore-headlines pour ignorer les titres dans l'export
+  (unless (package-installed-p 'org-contrib)
+    (package-refresh-contents)
+    (package-install 'org-contrib))
+  (with-eval-after-load 'ox
+    (require 'ox-extra)
+    (ox-extras-activate '(ignore-headlines)))
+  ;; Preview LateX avec MathJax
+  (use-package org-latex-impatient
+    :defer t
+    :hook (org-mode . org-latex-impatient-mode)
+    :init
+    (setq org-latex-impatient-tex2svg-bin
+          ;; location of tex2svg executable
+          "~/node_modules/mathjax-node-cli/bin/tex2svg"))
+  ;; exportation vers PDF
+  (use-package ox-latex
+    :ensure nil ;; ox-latex est inclus dans org, pas besoin d'installer
+    :defer t
+    :config
+    (setq org-latex-pdf-process
+          '("pdflatex -interaction nonstopmode -output-directory %o %f"
+            "bibtex %b"
+            "pdflatex -interaction nonstopmode -output-directory %o %f"
+            "pdflatex -interaction nonstopmode -output-directory %o %f"))
+    (setq org-latex-with-hyperref nil) ;; Ne pas ajouter hypersetup automatiquement
+
+    (setq org-latex-logfiles-extensions
+          '("lof" "lot" "tex~" "aux" "idx" "log" "out" "toc" "nav" "snm" "vrb" "dvi"
+            "fdb_latexmk" "blg" "brf" "fls" "entoc" "ps" "spl" "bbl" "xmpi" "run.xml"
+            "bcf" "acn" "acr" "alg" "glg" "gls" "ist"))
+
+    (unless (boundp 'org-latex-classes)
+    (setq org-latex-classes nil)))
+  
+#+END_SRC
+** org-noter
+#+BEGIN_SRC emacs-lisp
+;; org-noter pour la prise de notes dans les PDF
+(use-package org-noter
+  :after (:any org pdf-view)
+  :config
+  (setq
+   org-noter-notes-search-path '("~/org/notes/")
+   org-noter-always-create-frame nil
+   org-noter-hide-other nil))
+** Pdf tools
+#+BEGIN_SRC emacs-lisp
+;; Pdf-tools pour la visualisation de PDF(use-package org-noter
+  :config
+  ;; Your org-noter config ........
+  (require 'org-noter-pdftools))
+
+(use-package org-pdftools
+  :hook (org-mode . org-pdftools-setup-link))
+
+(use-package org-noter-pdftools
+  :after org-noter
+  :config
+  ;; Add a function to ensure precise note is inserted
+  (defun org-noter-pdftools-insert-precise-note (&optional toggle-no-questions)
+    (interactive "P")
+    (org-noter--with-valid-session
+     (let ((org-noter-insert-note-no-questions (if toggle-no-questions
+                                                   (not org-noter-insert-note-no-questions)
+                                                 org-noter-insert-note-no-questions))
+           (org-pdftools-use-isearch-link t)
+           (org-pdftools-use-freepointer-annot t))
+       (org-noter-insert-note (org-noter--get-precise-info)))))
+
+  ;; fix https://github.com/weirdNox/org-noter/pull/93/commits/f8349ae7575e599f375de1be6be2d0d5de4e6cbf
+  (defun org-noter-set-start-location (&optional arg)
+    "When opening a session with this document, go to the current location.
+With a prefix ARG, remove start location."
+    (interactive "P")
+    (org-noter--with-valid-session
+     (let ((inhibit-read-only t)
+           (ast (org-noter--parse-root))
+           (location (org-noter--doc-approx-location (when (called-interactively-p 'any) 'interactive))))
+       (with-current-buffer (org-noter--session-notes-buffer session)
+         (org-with-wide-buffer
+          (goto-char (org-element-property :begin ast))
+          (if arg
+              (org-entry-delete nil org-noter-property-note-location)
+            (org-entry-put nil org-noter-property-note-location
+                           (org-noter--pretty-print-location location))))))))
+  (with-eval-after-load 'pdf-annot
+    (add-hook 'pdf-annot-activate-handler-functions #'org-noter-pdftools-jump-to-note)))
+ #+END_SRC
+** Org projectile
+#+BEGIN_SRC emacs-lisp
+  ;; Intégration d'Org avec Projectile
+(use-package org-projectile
+  :after (org)
+  :config
+  (org-projectile-per-project)
+  :custom
+  (org-project-capture-per-project-filepath "TODO.org"))
+
+(use-package org-projectile-helm
+  :after org-projectile
+  :bind (("C-c n p" . org-projectile-helm-template-or-project)
+	 ("C-c p O" . sodaware/org-projectile-goto-project-file)))
+#+END_SRC
 ** Jupyter pour les notebooks
 
 #+BEGIN_SRC emacs-lisp
@@ -626,15 +808,18 @@ Configuration optimisée de LSP pour de meilleures performances.
 ** Finalisation
 
 #+BEGIN_SRC emacs-lisp
-  ;; Finalisation
-  (provide 'init)
-  ;;; init.el ends here
+     ;; Finalisation
+     (provide 'init)
+     ;;; init.el ends here
 
-  (custom-set-faces
- ;; Onglet modifié et sélectionné
- '(centaur-tabs-selected-modified ((t (:foreground "red" :weight bold))))
- ;; Onglet modifié et non sélectionné
- '(centaur-tabs-unselected-modified ((t (:foreground "red" :weight bold)))))
+     (custom-set-faces
+    ;; Onglet modifié et sélectionné
+    '(centaur-tabs-selected-modified ((t (:foreground "red" :weight bold))))
+    ;; Onglet modifié et non sélectionné
+    '(centaur-tabs-unselected-modified ((t (:foreground "red" :weight bold)))))
+  (require 'helm)
+  (helm-mode 1)
+
 #+END_SRC
 
 * Instructions d'installation
@@ -676,3 +861,7 @@ Configuration optimisée de LSP pour de meilleures performances.
 - *Nettoyage des hooks* : Suppression des configurations inutiles
 
 Cette configuration devrait être significativement plus rapide et plus maintenable que l'originale.
+
+
+
+

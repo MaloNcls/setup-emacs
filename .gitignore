@@ -1,0 +1,11 @@
+config.org~         
+init.el~            
+recentf             
+recentf~            
+projectile-bookmarks.eld 
+tramp/              
+transient/          
+eln-cache/          
+elpa/               
+tree-sitter/        
+auto-save-list/     
